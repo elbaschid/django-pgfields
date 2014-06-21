@@ -21,11 +21,11 @@ class ArrayField(models.Field):
     def __init__(self, of=models.IntegerField, **kwargs):
         # The `of` argument is a bit tricky once we need compatibility
         # with South.
-        # 
+        #
         # South can't store a field, and the eval it performs doesn't
         # put enough things in the context to use South's internal
         # "get field" function (`BaseMigration.gf`).
-        # 
+        #
         # Therefore, we need to be able to accept a South triple of our
         # sub-field and hook into South to get the correct thing back.
         if isinstance(of, tuple) and south_installed:
@@ -45,6 +45,12 @@ class ArrayField(models.Field):
 
         # Now pass the rest of the work to the Field superclass.
         super(ArrayField, self).__init__(**kwargs)
+
+    def deconstruct(self):
+        name, path, args, kwargs = super(ArrayField, self).deconstruct()
+        if self.of is not models.IntegerField:
+            kwargs['of'] = self.of
+        return name, path, args, kwargs
 
     def create_type(self, connection):
         if hasattr(self.of, 'create_type'):
