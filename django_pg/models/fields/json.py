@@ -36,6 +36,12 @@ class JSONField(models.Field):
         super(JSONField, self).__init__(*args, null=null, blank=blank,
                                         default=default, **kwargs)
 
+    def deconstruct(self):
+        name, path, args, kwargs = super(JSONField, self).deconstruct()
+        if self._type is not None:
+            kwargs['type'] = self._type
+        return name, path, args, kwargs
+
     def db_type(self, connection):
         return 'json' if get_version(connection) >= 90200 else 'text'
 
@@ -54,7 +60,7 @@ class JSONField(models.Field):
 
     def get_prep_value(self, value):
         return json.dumps(value)
-        
+
     @validate_type
     def to_python(self, value):
         """Given input that may be a Python value and may be JSON, return
@@ -63,7 +69,7 @@ class JSONField(models.Field):
         # Lists, dicts, ints, and booleans are clearly fine as is.
         if not isinstance(value, six.text_type):
             return value
-            
+
         # Properly identify numbers and return them as ints or floats.
         if self._type != six.text_type:
             if re.match(r'^[\d]+$', value):
@@ -71,7 +77,7 @@ class JSONField(models.Field):
             if (re.match(r'^[\d]+\.[\d]*$', value) or
                             re.match(r'^\.[\d]+$', value)):
                 return float(value)
-            
+
             # Try to tell the difference between a "normal" string
             # and serialized JSON.
             #
@@ -87,7 +93,7 @@ class JSONField(models.Field):
         # this field is set to str.
         if value.startswith('"') and value.endswith('"'):
             return json.loads(value)
-                        
+
         # Okay, this is not a JSON string. Return the unadulterated value.
         return value
 

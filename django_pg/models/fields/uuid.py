@@ -51,6 +51,12 @@ class UUIDField(Field):
         # Now pass the rest of the work to CharField.
         super(UUIDField, self).__init__(**kwargs)
 
+    def deconstruct(self):
+        name, path, args, kwargs = super(UUIDField, self).deconstruct()
+        kwargs['auto_add'] = self._auto_add
+        kwargs['coerce_to'] = self._coerce_to
+        return name, path, args, kwargs
+
     def db_type(self, connection):
         return 'uuid'
 
