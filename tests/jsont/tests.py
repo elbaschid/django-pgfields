@@ -1,8 +1,8 @@
 from __future__ import absolute_import, unicode_literals
-from django.core.exceptions import ValidationError
-from django.db import connection
 from django.test import TestCase
+from django.utils.unittest import skipIf
 from django_pg.models.fields.json import JSONField
+from django_pg.utils.south import using_new_migrations
 from tests.jsont.models import Song
 import math
 
@@ -87,7 +87,7 @@ class JSONSuite(TestCase):
         properly returns empty list.
         """
         # Assert that a retreival of a default value from a database
-        # save returns what we expect. 
+        # save returns what we expect.
         song = Song.objects.get(title='All that is Gold does not Glitter')
         self.assertEqual(song.sample_lines, [])
 
@@ -189,6 +189,19 @@ class JSONSuite(TestCase):
         song = Song(title='Something', sample_lines='')
         self.assertIsInstance(song.sample_lines, list)
         self.assertEqual(song.sample_lines, [])
+
+    @skipIf(not using_new_migrations, 'not using new migrations')
+    def test_default_type_is_not_returned_in_deconstruct(self):
+        field = Song._meta.get_field('data')
+        name, path, args, kwargs = field.deconstruct()
+        self.assertNotIn('type', kwargs)
+
+    @skipIf(not using_new_migrations, 'not using new migrations')
+    def test_setting_type_is_reflected_in_deconstruct(self):
+        field = Song._meta.get_field('sample_lines')
+        name, path, args, kwargs = field.deconstruct()
+        self.assertEqual(kwargs['type'], list)
+
 
 class SupportSuite(TestCase):
     """Suite for testing more rarely-accessed aspects of JSON fields."""

@@ -1,5 +1,8 @@
 from __future__ import absolute_import, unicode_literals
+from django.db import models
 from django.test import TestCase
+from django.utils.unittest import skipIf
+from django_pg.utils.south import using_new_migrations
 from tests.arrays.models import Place
 
 
@@ -92,3 +95,16 @@ class ArrayTests(TestCase):
         from django.db import connection
         field = Place._meta.get_field('residents')
         self.assertEqual(field.create_type_sql(connection), '')
+
+    @skipIf(not using_new_migrations, 'not using new migrations')
+    def test_array_deconstruct_method(self):
+        from django_pg.models import ArrayField
+        name, path, args, kwargs = ArrayField().deconstruct()
+        self.assertTrue(isinstance(kwargs['of'], models.IntegerField))
+
+    @skipIf(not using_new_migrations, 'not using new migrations')
+    def test_array_deconstruct_method_with_changed_field_type(self):
+        from django.db import models
+        field = Place._meta.get_field('residents')
+        name, path, args, kwargs = field.deconstruct()
+        self.assertTrue(isinstance(kwargs['of'], models.CharField))

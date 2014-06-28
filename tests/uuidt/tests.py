@@ -4,7 +4,7 @@ from django.utils.unittest import skipIf
 from django_pg import models
 from django_pg.models.fields.uuid import UUIDAdapter, UUIDField
 from django.test.utils import override_settings
-from django_pg.utils.south import south_installed
+from django_pg.utils.south import south_installed, using_new_migrations
 from tests.uuidt.models import Movie, Game, Book, SomethingElse
 import uuid
 
@@ -169,3 +169,34 @@ class ParentSuite(TestCase):
 
         id_field = ChildII._meta.get_field_by_name('id')[0]
         self.assertIsInstance(id_field, models.UUIDField)
+
+
+@skipIf(not using_new_migrations, 'not using new migrations')
+class DeconstructSuite(TestCase):
+    """ Test that custom keywords in the UUIDField are deconstructed correctly
+    when using new migrations in Django 1.7+
+    """
+
+    def test_default_auto_add_returned_in_deconstruct(self):
+        field = UUIDField()
+        name, path, args, kwargs = field.deconstruct()
+        self.assertEqual(kwargs['auto_add'], False)
+
+    def test_setting_auto_add_is_reflected_in_deconstruct(self):
+        field = UUIDField(auto_add=True)
+        name, path, args, kwargs = field.deconstruct()
+        self.assertEqual(kwargs['auto_add'], uuid.uuid4)
+
+        field = UUIDField(auto_add=False)
+        name, path, args, kwargs = field.deconstruct()
+        self.assertEqual(kwargs['auto_add'], False)
+
+    def test_default_coerce_to_is_not_returned_in_deconstruct(self):
+        field = UUIDField()
+        name, path, args, kwargs = field.deconstruct()
+        self.assertEqual(kwargs['coerce_to'], uuid.UUID)
+
+    def test_setting_coerce_to_is_reflected_in_deconstruct(self):
+        field = UUIDField(coerce_to=uuid.UUID)
+        name, path, args, kwargs = field.deconstruct()
+        self.assertEqual(kwargs['coerce_to'], uuid.UUID)
